@@ -248,7 +248,7 @@ router.patch(
       const { orderStatus } = req.body;
       if (
         typeof orderStatus !== "string" ||
-        !["Processing", "Shipped", "Delivered"].includes(orderStatus)
+        !["Processing", "Shipped", "Delivered", "Cancelled"].includes(orderStatus)
       ) {
         return res.status(400).json({
           success: false,
@@ -275,8 +275,8 @@ router.patch(
 
       // Define allowed status transitions
       const allowedTransitions = {
-        Placed: ["Processing"],
-        Processing: ["Shipped"],
+        Placed: ["Processing", "Cancelled"],
+        Processing: ["Shipped", "Cancelled"],
         Shipped: ["Delivered"],
         Delivered: [],
         Cancelled: []

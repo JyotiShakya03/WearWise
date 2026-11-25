@@ -57,6 +57,8 @@ function AdminOrders() {
     const data = await response.json();
 
     if (response.ok) {
+       console.log("UPDATED ORDER FROM DATABASE:", data.order);
+
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order._id === orderId
@@ -117,17 +119,54 @@ function AdminOrders() {
                 <td>₹{order.totalAmount}</td>
 
                 <td>
-                <select
+                  <select
                     value={order.orderStatus}
                     onChange={(e) =>
-                    updateOrderStatus(order._id, e.target.value)
+                      updateOrderStatus(order._id, e.target.value)
                     }
-                >
-                  <option value="Processing">Processing</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Cancelled" disabled>Cancelled</option>
-                </select>
+                  >
+                    {order.orderStatus === "Placed" && (
+                      <option value="Placed" disabled>
+                        Placed
+                      </option>
+                    )}
+
+                    {order.orderStatus === "Processing" && (
+                      <option value="Processing" disabled>
+                        Processing
+                      </option>
+                    )}
+
+                    {order.orderStatus === "Shipped" && (
+                      <option value="Shipped" disabled>
+                        Shipped
+                      </option>
+                    )}
+
+                    {order.orderStatus === "Delivered" && (
+                      <option value="Delivered" disabled>
+                        Delivered
+                      </option>
+                    )}
+
+                    <option value="Processing" disabled={order.orderStatus !== "Placed"}>
+                      Processing
+                    </option>
+
+                    <option value="Shipped" disabled={order.orderStatus !== "Processing"}>
+                      Shipped
+                    </option>
+
+                    <option value="Delivered" disabled={order.orderStatus !== "Shipped"}>
+                      Delivered
+                    </option>
+                    <option
+                      value="Cancelled"
+                      disabled={!["Placed", "Processing"].includes(order.orderStatus)}
+                    >
+                      Cancelled
+                    </option>
+                  </select>
                 </td>
 
                 <td>
