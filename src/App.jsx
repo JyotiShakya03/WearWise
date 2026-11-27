@@ -9,6 +9,14 @@ import AdminLayout from "./components/AdminLayout";
 import AdminOrders from "./pages/AdminOrders";
 import AdminProducts from "./pages/AdminProducts";
 import AdminCustomers from "./pages/AdminCustomers";
+import Contact from "./pages/Contact";
+import About from "./pages/About";
+import FAQs from "./pages/FAQs";
+import Shipping from "./pages/Shipping";
+import Returns from "./pages/Returns";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+
 
 import {
   Shirt,
@@ -25,7 +33,19 @@ import {
 } from 'lucide-react';
 
 
-function Navbar({  wishlistCount, onWishlistClick, isWishlistOpen, cartCount, onCartClick, loggedInUser, onLogout, onOrdersClick}) {
+function Navbar({
+  wishlistCount,
+  onWishlistClick,
+  isWishlistOpen,
+  cartCount,
+  onCartClick,
+  loggedInUser,
+  onLogout,
+  onOrdersClick,
+  searchQuery,
+  onSearchChange
+}) {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   return (
     <nav className="navbar">
 
@@ -47,16 +67,29 @@ function Navbar({  wishlistCount, onWishlistClick, isWishlistOpen, cartCount, on
 
       <div className="nav-actions">
 
+       {isSearchOpen && (
+          <input
+            type="text"
+            className="navbar-search-input"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                document.getElementById("shop")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start"
+                });
+              }
+            }}
+            autoFocus
+          />
+        )}
+
         <button
           className="nav-icon"
           aria-label="Search products"
-          onClick={() => {
-            document.getElementById("shop")?.scrollIntoView({
-              behavior: "smooth"
-            });
-
-            document.querySelector(".product-search input")?.focus();
-          }}
+          onClick={() => setIsSearchOpen(!isSearchOpen)}
         >
           <Search size={18} />
         </button>
@@ -212,7 +245,7 @@ const categories = [
 ];
 
 
-function CategoryCard({ category }) {
+function CategoryCard({ category, onCategoryClick }) {
   return (
     <div className="category-card">
       <img src={category.image} alt={category.name} />
@@ -221,7 +254,13 @@ function CategoryCard({ category }) {
         <h3>{category.name}</h3>
         <p>{category.description}</p>
 
-        <a href="#shop">
+        <a
+          href="#shop"
+          onClick={(e) => {
+            e.preventDefault();
+            onCategoryClick(category.name);
+          }}
+        >
           Explore Collection <ArrowRight size={15} />
         </a>
       </div>
@@ -229,7 +268,8 @@ function CategoryCard({ category }) {
   );
 }
 
-function CategorySection() {
+
+function CategorySection({ onCategoryClick }) {
   return (
     <section className="category-section" id="categories">
 
@@ -246,6 +286,7 @@ function CategorySection() {
           <CategoryCard
             key={category.name}
             category={category}
+            onCategoryClick={onCategoryClick}
           />
         ))}
       </div>
@@ -253,7 +294,6 @@ function CategorySection() {
     </section>
   );
 }
-
 
 function ProductCard({ product, isWishlisted, onToggleWishlist, onAddToCart, onProductClick, onTryOn }){
   return (
@@ -453,7 +493,8 @@ function WishlistSection({
   wishlist,
   onToggleWishlist,
   onAddToCart,
-  onProductClick
+  onProductClick,
+  onTryOn
 }) {
   const savedProducts = products.filter((product) =>
     wishlist.includes(product.id)
@@ -495,6 +536,7 @@ function WishlistSection({
               onToggleWishlist={onToggleWishlist}
               onAddToCart={onAddToCart}
               onProductClick={onProductClick}
+              onTryOn={onTryOn}
             />
           ))}
         </div>
@@ -1216,7 +1258,9 @@ function handleReset() {
       setResultImage(null);
       setTryOnMessage("Generating your virtual try-on... Please wait.");
 
-      // Get the selected product image
+      console.log("Selected Product:", selectedProduct);
+      console.log("Product Image URL:", selectedProduct.image);
+    // Get the selected product image
       const garmentResponse = await fetch(selectedProduct.image);
 
       if (!garmentResponse.ok) {
@@ -1401,6 +1445,7 @@ function handleReset() {
 }
 
 
+
 function BackendTest() {
   const [message, setMessage] = useState("Connecting to backend...");
 
@@ -1418,6 +1463,239 @@ function BackendTest() {
 
   return <p>{message}</p>;
 }
+
+
+function Footer() {
+  return (
+    <footer className="footer">
+
+      <div className="footer-container">
+
+        {/* Brand Section */}
+        <div className="footer-brand">
+          <h2>Wear<span>Wise.</span></h2>
+          <h3>Style that speaks. Confidence that shines.</h3>
+          <p>
+            Discover fashion that celebrates your individuality.
+            Find your perfect look with WearWise.
+          </p>
+        </div>
+
+        {/* Shop Links */}
+        <div className="footer-column">
+          <h4>SHOP</h4>
+          <a href="#shop">All Products</a>
+          <a href="#shop">Ethnic Wear</a>
+          <a href="#shop">Kurtis & Suits</a>
+          <a href="#shop">Western Wear</a>
+          <a href="#shop">Dresses</a>
+        </div>
+
+        {/* Customer Care */}
+        <div className="footer-column">
+          <h4>CUSTOMER CARE</h4>
+          <Link to="/contact">Contact Us</Link>
+          <Link to="/faqs">FAQs</Link>
+          <Link to="/shipping">Shipping Information</Link>
+          <Link to="/returns">Returns & Refunds</Link>
+        </div>
+
+        {/* Information */}
+        <div className="footer-column">
+          <h4>INFORMATION</h4>
+          <Link to="/about">About Us</Link>
+          <a href="#tryon">Virtual Try-On</a>
+          <Link to="/privacy">Privacy Policy</Link>
+          <Link to="/terms">Terms & Conditions</Link>
+        </div>
+
+      </div>
+
+      {/* Newsletter */}
+      <div className="footer-newsletter">
+        <h3>Join the WearWise Community</h3>
+        <p>
+          Get updates on new collections, exclusive offers and latest styles.
+        </p>
+
+        <form onSubmit={(e) => e.preventDefault()}>
+          <input
+            type="email"
+            placeholder="Enter your email address"
+            required
+          />
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+
+      {/* Social Media */}
+      <div className="footer-social">
+  <a href="#">Instagram</a>
+  <a href="#">Facebook</a>
+  <a href="#">Pinterest</a>
+</div>
+
+      {/* Bottom Bar */}
+      <div className="footer-bottom">
+        <p>© 2026 WearWise. All rights reserved.</p>
+        <p>Made with love for every woman.</p>
+      </div>
+
+    </footer>
+  );
+}
+
+function ContactPage() {
+  return (
+    <div className="app">
+      <Navbar
+        wishlistCount={0}
+        onWishlistClick={() => {}}
+        isWishlistOpen={false}
+        cartCount={0}
+        onCartClick={() => {}}
+        loggedInUser={null}
+        onLogout={() => {}}
+        onOrdersClick={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+      />
+
+      <Contact />
+
+      <Footer />
+    </div>
+  );
+}
+
+function AboutPage() {
+  return (
+    <div className="app">
+      <Navbar
+        wishlistCount={0}
+        onWishlistClick={() => {}}
+        isWishlistOpen={false}
+        cartCount={0}
+        onCartClick={() => {}}
+        loggedInUser={null}
+        onLogout={() => {}}
+        onOrdersClick={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+      />
+
+      <About />
+
+      <Footer />
+    </div>
+  );
+}
+
+function FAQsPage() {
+  return (
+    <div className="app">
+      <Navbar
+        wishlistCount={0}
+        onWishlistClick={() => {}}
+        isWishlistOpen={false}
+        cartCount={0}
+        onCartClick={() => {}}
+        loggedInUser={null}
+        onLogout={() => {}}
+        onOrdersClick={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+      />
+      <FAQs />
+      <Footer />
+    </div>
+  );
+}
+
+function ShippingPage() {
+  return (
+    <div className="app">
+      <Navbar
+        wishlistCount={0}
+        onWishlistClick={() => {}}
+        isWishlistOpen={false}
+        cartCount={0}
+        onCartClick={() => {}}
+        loggedInUser={null}
+        onLogout={() => {}}
+        onOrdersClick={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+      />
+      <Shipping />
+      <Footer />
+    </div>
+  );
+}
+
+function ReturnsPage() {
+  return (
+    <div className="app">
+      <Navbar
+        wishlistCount={0}
+        onWishlistClick={() => {}}
+        isWishlistOpen={false}
+        cartCount={0}
+        onCartClick={() => {}}
+        loggedInUser={null}
+        onLogout={() => {}}
+        onOrdersClick={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+      />
+      <Returns />
+      <Footer />
+    </div>
+  );
+}
+
+function PrivacyPage() {
+  return (
+    <div className="app">
+      <Navbar
+        wishlistCount={0}
+        onWishlistClick={() => {}}
+        isWishlistOpen={false}
+        cartCount={0}
+        onCartClick={() => {}}
+        loggedInUser={null}
+        onLogout={() => {}}
+        onOrdersClick={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+      />
+      <Privacy />
+      <Footer />
+    </div>
+  );
+}
+
+function TermsPage() {
+  return (
+    <div className="app">
+      <Navbar
+        wishlistCount={0}
+        onWishlistClick={() => {}}
+        isWishlistOpen={false}
+        cartCount={0}
+        onCartClick={() => {}}
+        loggedInUser={null}
+        onLogout={() => {}}
+        onOrdersClick={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+      />
+      <Terms />
+      <Footer />
+    </div>
+  );
+}
+
 
 function HomePage() {
   const [products, setProducts] = useState([]);
@@ -1482,13 +1760,18 @@ const [cartLoading, setCartLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedTryOnProduct, setSelectedTryOnProduct] = useState("");
 
-const handleProductTryOn = (product) => {
+ const handleProductTryOn = (product) => {
   setSelectedTryOnProduct(String(product.id));
-
-  document.getElementById("tryon")?.scrollIntoView({
-    behavior: "smooth"
-  });
+  setShowWishlist(false);
 };
+
+useEffect(() => {
+  if (!showWishlist && selectedTryOnProduct) {
+    document.getElementById("tryon")?.scrollIntoView({
+      behavior: "smooth"
+    });
+  }
+}, [showWishlist, selectedTryOnProduct]);
 
 // Save wishlist only for guest users
 useEffect(() => {
@@ -1871,6 +2154,8 @@ const cartCount = cart.reduce(
   setSelectedProduct(null);
 }}
   onLogout={handleLogout}
+  searchQuery={searchQuery}
+  onSearchChange={setSearchQuery}
 />
 
 {selectedProduct ? (
@@ -1886,6 +2171,7 @@ const cartCount = cart.reduce(
     onToggleWishlist={toggleWishlist}
     onAddToCart={addToCart}
     onProductClick={setSelectedProduct}
+    onTryOn={handleProductTryOn}
   />
 ) : showCheckout ? (
   <CheckoutSection
@@ -1912,7 +2198,16 @@ const cartCount = cart.reduce(
 ) : (
   <>
     <Hero />
-    <CategorySection />
+    <CategorySection
+      onCategoryClick={(categoryName) => {
+        setSelectedCategory(categoryName);
+
+        document.getElementById("shop")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }}
+    />
     <TrendingProducts
       products={products}
       wishlist={wishlist}
@@ -1927,11 +2222,13 @@ const cartCount = cart.reduce(
       sortOption={sortOption}
       onSortChange={setSortOption}
     />
-    <TryOnSection
+        <TryOnSection
       products={products}
       selectedTryOnProduct={selectedTryOnProduct}
       setSelectedTryOnProduct={setSelectedTryOnProduct}
     />
+
+    <Footer />
   </>
 )}
 
@@ -1957,14 +2254,24 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+      <Route path="/signup" element={<Signup />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/faqs" element={<FAQsPage />} />
+        <Route path="/shipping" element={<ShippingPage />} />
+        <Route path="/returns" element={<ReturnsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
 
-          <Route path="/admin" element={<AdminRoute />}>
+
+
+        <Route path="/admin" element={<AdminRoute />}>
           <Route index element={<AdminDashboard />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="customers" element={<AdminCustomers />} />
         </Route>
+
       </Routes>
     </BrowserRouter>
   );

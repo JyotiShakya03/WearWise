@@ -75,7 +75,12 @@ email: {
       street: { type: String, required: true, trim: true },
       city: { type: String, required: true, trim: true },
       state: { type: String, required: true, trim: true },
-      pincode: { type: String, required: true, trim: true }
+      pincode: {
+        type: String,
+        required: true,
+        trim: true,
+        match: /^[1-9][0-9]{5}$/
+      }
     },
 
     subtotal: {
@@ -104,5 +109,22 @@ email: {
   },
   { timestamps: true }
 );
+
+orderSchema.pre("validate", function () {
+  const calculatedSubtotal = this.items.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
+
+  if (Math.abs(this.subtotal - calculatedSubtotal) > 0.01) {
+    this.invalidate("subtotal", "Subtotal calculation is incorrect.");
+  }
+
+  if (
+    Math.abs(this.totalAmount - (this.subtotal + this.deliveryCharge)) > 0.01
+  ) {
+    this.invalidate("totalAmount", "Total amount calculation is incorrect.");
+  }
+});
 
 module.exports = mongoose.model("Order", orderSchema);

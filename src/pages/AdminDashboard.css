@@ -335,3 +335,145 @@
 .view-orders-btn span {
   font-size: 17px;
 }
+
+.message-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.message-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 550px;
+  padding: 30px;
+  border-radius: 12px;
+  position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.message-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  border: none;
+  background: none;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.message-full-content {
+  background: #f7f7f3;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+  overflow-wrap: anywhere;
+}
+
+
+.message-status-select {
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.message-status-select.new {
+  background: #fff3dc;
+  color: #a66a00;
+  border-color: #f2d49b;
+}
+
+.message-status-select.read {
+  background: #e8f1ff;
+  color: #245ca6;
+  border-color: #c4d9f7;
+}
+
+.message-status-select.replied {
+  background: #e5f5eb;
+  color: #237344;
+  border-color: #b9e2c7;
+}
+
+.contact-messages-section .recent-orders-table td {
+  vertical-align: middle;
+}
+
+.contact-messages-section .recent-orders-table td:nth-child(3) {
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+
+.contact-messages-section .recent-orders-table th {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .contact-messages-section {
+    overflow-x: auto;
+  }
+
+  .contact-messages-section .recent-orders-table {
+    min-width: 850px;
+  }
+}
+
+.contact-messages-section .view-orders-btn {
+  background: #183b2b;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.contact-messages-section .view-orders-btn:hover {
+  background: #28563f;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .contact-messages-section {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .contact-messages-section .recent-orders-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .contact-messages-section .recent-orders-table {
+    min-width: 850px;
+  }
+
+  .message-modal {
+    width: 95%;
+    padding: 22px;
+  }
+
+  .message-modal h2 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-modal-overlay {
+    padding: 10px;
+  }
+
+  .message-modal {
+    max-height: 90vh;
+    padding: 20px;
+  }
+}

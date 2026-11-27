@@ -95,9 +95,11 @@
   border: 1px solid #e8e9e4;
   border-radius: 12px;
   margin-bottom: 25px;
+
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 25px;
+  align-items: stretch;
 }
 
 .product-form h2 {
@@ -106,16 +108,25 @@
   margin: 0 0 5px;
 }
 
-.product-form input {
+.product-form-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+  align-content: start;
+}
+
+.product-form-fields input {
   width: 100%;
+  min-width: 0;
   padding: 12px;
   border: 1px solid #dce3dc;
   border-radius: 7px;
   outline: none;
   font-size: 14px;
+  box-sizing: border-box;
 }
 
-.product-form input:focus {
+.product-form-fields input:focus {
   border-color: #315c47;
 }
 
@@ -164,4 +175,96 @@
 
 .delete-product-btn:hover {
   background: #fce0dc;
+}
+
+.product-image-upload {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.product-image-upload label {
+  font-weight: 600;
+}
+
+.product-image-upload p {
+  text-align: center;
+  font-weight: 600;
+  margin: 0;
+}
+
+.product-preview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.product-preview-panel h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #26352d;
+}
+
+.product-image-preview,
+.preview-placeholder {
+  width: 100%;
+  height: 520px;
+  min-height: 480px;
+  max-height: 600px;
+  border: 1px solid #e8e9e4;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.product-image-preview {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  background: #f8f8f8;
+  padding: 10px;
+}
+
+.preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f8f8;
+  color: #888;
+  padding: 15px;
+  text-align: center;
+}
+
+@media (max-width: 750px) {
+  .product-form {
+    grid-template-columns: 1fr;
+  }
+
+  .product-form-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .product-form h2 {
+    grid-column: 1;
+  }
+
+  .product-image-preview,
+  .preview-placeholder {
+    height: 400px;
+    min-height: 350px;
+    max-height: 450px;
+  }
+}
+
+.product-form-fields button[type="submit"] {
+  grid-column: 1 / -1;
+  justify-self: start;
+  width: fit-content;
+  min-width: 130px;
+  padding: 10px 22px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
 }

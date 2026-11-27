@@ -3,10 +3,11 @@ const express = require("express");
 const multer = require("multer");
 const FormData = require("form-data");
 const axios = require("axios");
-
 const router = express.Router();
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const sharp = require("sharp");
+
+
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -60,26 +61,46 @@ router.post(
 
       const { fileTypeFromBuffer } = await import("file-type");
 
-const personType = await fileTypeFromBuffer(personImage.buffer);
-const garmentType = await fileTypeFromBuffer(garmentImage.buffer);
+      const personType = await fileTypeFromBuffer(personImage.buffer);
+      const garmentType = await fileTypeFromBuffer(garmentImage.buffer);
 
-const allowedTypes = [
-  "image/jpeg",
-  "image/png",
-  "image/webp"
-];
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ];
 
-if (
-  !personType ||
-  !garmentType ||
-  !allowedTypes.includes(personType.mime) ||
-  !allowedTypes.includes(garmentType.mime)
-) {
-  return res.status(400).json({
-    success: false,
-    message: "Invalid image file. Only genuine JPG, PNG and WEBP images are allowed."
-  });
-}
+    if (
+      !personType ||
+      !garmentType ||
+      !allowedTypes.includes(personType.mime) ||
+      !allowedTypes.includes(garmentType.mime)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image file. Only genuine JPG, PNG and WEBP images are allowed."
+      });
+    }
+
+    const MAX_IMAGE_PIXELS = 25_000_000;
+
+    const personMetadata = await sharp(personImage.buffer).metadata();
+    const garmentMetadata = await sharp(garmentImage.buffer).metadata();
+
+      if (
+        !personMetadata.width ||
+        !personMetadata.height ||
+        !garmentMetadata.width ||
+        !garmentMetadata.height ||
+        personMetadata.width * personMetadata.height > MAX_IMAGE_PIXELS ||
+        garmentMetadata.width * garmentMetadata.height > MAX_IMAGE_PIXELS
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Image dimensions are too large. Please upload smaller images."
+        });
+      }
+
 
       if (!process.env.AI_SERVICE_URL || !process.env.WEARWISE_API_KEY) {
         return res.status(500).json({
@@ -119,28 +140,45 @@ if (
       );
 
       if (
-  !response.headers["content-type"]?.startsWith("image/png")
-) {
-  return res.status(502).json({
-    success: false,
-    message: "AI service returned an invalid image response."
-  });
-}
+      !response.headers["content-type"]?.startsWith("image/png")
+    ) {
+      return res.status(502).json({
+        success: false,
+        message: "AI service returned an invalid image response."
+      });
+    }
+
+    const outputBuffer = Buffer.from(response.data);
+
+    const outputType = await fileTypeFromBuffer(outputBuffer);
+
+    if (outputType?.mime !== "image/png") {
+      return res.status(502).json({
+        success: false,
+        message: "AI service returned an invalid image."
+      });
+    }
 
       res.set("Content-Type", "image/png");
       res.set("Cache-Control", "no-store");
-      res.send(Buffer.from(response.data));
+      res.send(outputBuffer);
 
     } catch (error) {
       console.error("AI Try-On Error:", error.message);
 
-      res.status(500).json({
+      const statusCode = error.code === "ECONNABORTED" ? 504 : 502;
+
+      res.status(statusCode).json({
         success: false,
-        message: "Virtual try-on generation failed"
+        message: error.code === "ECONNABORTED"
+          ? "Virtual try-on timed out. Please try again."
+          : "Virtual try-on service is temporarily unavailable."
       });
     }
   }
 );
+
+
 
 // Handle image upload errors
 router.use((error, req, res, next) => {

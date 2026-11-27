@@ -9,6 +9,12 @@ function AdminDashboard() {
     const [totalCustomers, setTotalCustomers] = useState(0);
     const [totalRevenue, setTotalRevenue] = useState(0);
     const [recentOrders, setRecentOrders] = useState([]);
+    const [contactMessages, setContactMessages] = useState([]);
+    const [selectedMessage, setSelectedMessage] = useState(null);
+    const [totalMessages, setTotalMessages] = useState(0);
+    const [newMessages, setNewMessages] = useState(0);
+    const [repliedMessages, setRepliedMessages] = useState(0);
+
 
 
     useEffect(() => {
@@ -103,6 +109,138 @@ if (response.ok) {
   fetchCustomers();
 }, []);
 
+
+useEffect(() => {
+  const fetchContactMessages = async () => {
+    try {
+      const token = sessionStorage.getItem("wearwise-token");
+
+const response = await fetch("http://localhost:5000/api/contact", {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+      const data = await response.json();
+
+      if (response.ok) {
+        const messages = data.data || [];
+
+        setContactMessages(messages);
+        setTotalMessages(messages.length);
+        setNewMessages(
+          messages.filter((msg) => msg.status === "New").length
+        );
+        setRepliedMessages(
+          messages.filter((msg) => msg.status === "Replied").length
+        );
+      }
+    } catch (error) {
+      console.error("Contact Messages Error:", error);
+    }
+  };
+
+  fetchContactMessages();
+}, []);
+
+
+
+const updateMessageStatus = async (id, status) => {
+  try {
+    const token = sessionStorage.getItem("wearwise-token");
+
+    const response = await fetch(
+      `http://localhost:5000/api/contact/${id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setContactMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === id ? { ...msg, status } : msg
+        )
+      );
+
+      setNewMessages((prev) =>
+        prev + (status === "New" ? 1 : -1)
+      );
+
+      // Refresh accurate counts
+      const refresh = await fetch("http://localhost:5000/api/contact", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const refreshedData = await refresh.json();
+
+      if (refresh.ok) {
+        setNewMessages(
+          refreshedData.data.filter((msg) => msg.status === "New").length
+        );
+        setRepliedMessages(
+          refreshedData.data.filter((msg) => msg.status === "Replied").length
+        );
+      }
+    } else {
+      alert(data.message || "Unable to update status.");
+    }
+  } catch (error) {
+    console.error("Update Status Error:", error);
+  }
+};
+
+const deleteContactMessage = async (id) => {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this message?"
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    const token = sessionStorage.getItem("wearwise-token");
+
+    const response = await fetch(
+      `http://localhost:5000/api/contact/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      const updatedMessages = contactMessages.filter(
+        (msg) => msg._id !== id
+      );
+
+      setContactMessages(updatedMessages);
+      setTotalMessages(updatedMessages.length);
+      setNewMessages(
+        updatedMessages.filter((msg) => msg.status === "New").length
+      );
+      setRepliedMessages(
+        updatedMessages.filter((msg) => msg.status === "Replied").length
+      );
+    } else {
+      alert(data.message || "Unable to delete message.");
+    }
+  } catch (error) {
+    console.error("Delete Message Error:", error);
+  }
+};
+
+
+
 return (
   <>
     <header className="admin-header">
@@ -144,6 +282,29 @@ return (
 </div>
     </section>
 
+
+<section className="dashboard-stats">
+  <div className="stat-card">
+    <p>Total Messages</p>
+    <h2>{totalMessages}</h2>
+    <span>Customer enquiries</span>
+  </div>
+
+  <div className="stat-card">
+    <p>New Messages</p>
+    <h2>{newMessages}</h2>
+    <span>Awaiting attention</span>
+  </div>
+
+  <div className="stat-card">
+    <p>Replied Messages</p>
+    <h2>{repliedMessages}</h2>
+    <span>Customer responses</span>
+  </div>
+</section>
+
+
+
     {/* Welcome Section */}
     <section className="admin-welcome">
       <h2>Manage Your Store</h2>
@@ -152,48 +313,82 @@ return (
         your WearWise store from one place.
       </p>
     </section>
-    <section className="recent-orders-section">
+
+
+
+<section className="recent-orders-section contact-messages-section">
   <div className="recent-orders-header">
     <div>
-      <h2>Recent Orders</h2>
-      <button
-        className="view-orders-btn"
-        onClick={() => window.location.href = "/admin/orders"}
-        >
-        View All Orders <span>→</span>
-        </button>
-      <p>Latest customer orders from your store.</p>
+      <h2>Customer Messages</h2>
+      <p>Manage enquiries received from your customers.</p>
     </div>
   </div>
 
-  {recentOrders.length === 0 ? (
-    <p>No recent orders found.</p>
+  {contactMessages.length === 0 ? (
+    <p>No contact messages found.</p>
   ) : (
     <div className="recent-orders-table-wrapper">
       <table className="recent-orders-table">
         <thead>
           <tr>
-            <th>Order ID</th>
             <th>Customer</th>
-            <th>Amount</th>
-            <th>Status</th>
+            <th>Subject</th>
+            <th>Message</th>
             <th>Date</th>
+            <th>Status</th>
+            <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
-          {recentOrders.map((order) => (
-            <tr key={order._id}>
-              <td>#{order._id.slice(-6)}</td>
-              <td>{order.userId?.name || "Customer"}</td>
-              <td>₹{order.totalAmount}</td>
+          {contactMessages.map((msg) => (
+            <tr key={msg._id}>
               <td>
-                <span className={`order-status ${order.orderStatus?.toLowerCase()}`}>
-                    {order.orderStatus}
-                </span>
-                </td>
+                <strong>{msg.name}</strong>
+                <br />
+                {msg.email}
+              </td>
+
+              <td>{msg.subject}</td>
+
               <td>
-                {new Date(order.createdAt).toLocaleDateString("en-IN")}
+              {msg.message.length > 50
+                ? msg.message.substring(0, 50) + "..."
+                : msg.message}
+
+              <button
+                className="view-orders-btn"
+                onClick={() => setSelectedMessage(msg)}
+              >
+                View
+              </button>
+            </td>
+
+              <td>
+                {new Date(msg.createdAt).toLocaleDateString("en-IN")}
+              </td>
+
+              <td>
+                <select
+                    className={`message-status-select ${msg.status.toLowerCase()}`}
+                    value={msg.status}
+                    onChange={(e) =>
+                      updateMessageStatus(msg._id, e.target.value)
+                    }
+                  >
+                  <option value="New">New</option>
+                  <option value="Read">Read</option>
+                  <option value="Replied">Replied</option>
+                </select>
+              </td>
+
+              <td>
+                <button
+                  className="view-orders-btn"
+                  onClick={() => deleteContactMessage(msg._id)}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}
@@ -201,7 +396,35 @@ return (
       </table>
     </div>
   )}
+
+  {selectedMessage && (
+  <div className="message-modal-overlay">
+    <div className="message-modal">
+      <button
+        className="message-modal-close"
+        onClick={() => setSelectedMessage(null)}
+      >
+        ×
+      </button>
+
+      <h2>Customer Message</h2>
+
+      <p><strong>Name:</strong> {selectedMessage.name}</p>
+      <p><strong>Email:</strong> {selectedMessage.email}</p>
+      <p><strong>Subject:</strong> {selectedMessage.subject}</p>
+      <p><strong>Date:</strong> {new Date(selectedMessage.createdAt).toLocaleString("en-IN")}</p>
+      <p><strong>Status:</strong> {selectedMessage.status}</p>
+
+      <div className="message-full-content">
+        <strong>Message:</strong>
+        <p>{selectedMessage.message}</p>
+      </div>
+    </div>
+  </div>
+)}
+
 </section>
+
   </>
 );
 }

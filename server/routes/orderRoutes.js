@@ -15,7 +15,11 @@ router.post("/", authMiddleware, async (req, res) => {
     const { items, shippingAddress } = req.body;
 
     // Validate order items
-    if (!Array.isArray(items) || items.length === 0) {
+    if (
+  !Array.isArray(items) ||
+  items.length === 0 ||
+  items.length > 50
+) {
       return res.status(400).json({
         success: false,
         message: "Please provide order items."

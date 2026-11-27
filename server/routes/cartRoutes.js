@@ -32,19 +32,21 @@ router.get("/", authMiddleware, async (req, res) => {
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const { productId, size, quantity = 1 } = req.body;
+    const parsedProductId = Number(productId);
+    const parsedQuantity = Number(quantity);
 
     if (
-      !Number.isInteger(productId) || productId <= 0 ||
+      !Number.isInteger(parsedProductId) || parsedProductId <= 0 ||
       !["S", "M", "L", "XL", "XXL"].includes(size) ||
-      !Number.isInteger(quantity) ||
-      quantity < 1 || quantity > 10
+      !Number.isInteger(parsedQuantity  ) ||
+      parsedQuantity < 1 || parsedQuantity > 10
     ) {
       return res.status(400).json({
         message: "Invalid product, size or quantity"
       });
     }
 
-    const product = await Product.findOne({ id: productId });
+    const product = await Product.findOne({ id: parsedProductId });
 
     if (!product) {
       return res.status(404).json({
@@ -65,18 +67,18 @@ router.post("/", authMiddleware, async (req, res) => {
 
     const existingItem = cart.items.find(
       (item) =>
-        item.productId === productId &&
+        item.productId === parsedProductId &&
         item.size === size
     );
 
     if (existingItem) {
-  if (existingItem.quantity + quantity > 10) {
+  if (existingItem.quantity + parsedQuantity > 10) {
     return res.status(400).json({
       message: "Maximum quantity allowed per product and size is 10."
     });
   }
 
-  existingItem.quantity += quantity;
+  existingItem.quantity += parsedQuantity;
 }
  else {
       cart.items.push({
@@ -85,7 +87,7 @@ router.post("/", authMiddleware, async (req, res) => {
         price: product.price,
         image: product.image,
         size,
-        quantity
+        quantity: parsedQuantity
       });
     }
 
@@ -110,13 +112,15 @@ router.post("/", authMiddleware, async (req, res) => {
 router.put("/update", authMiddleware, async (req, res) => {
   try {
     const { productId, size, quantity } = req.body;
+    const parsedProductId = Number(productId);
+    const parsedQuantity = Number(quantity);
 
-    if (
-      !Number.isInteger(productId) || productId <= 0 ||
-      !["S", "M", "L", "XL", "XXL"].includes(size) ||
-      !Number.isInteger(quantity) ||
-      quantity < 1 || quantity > 10
-    ) {
+      if (
+        !Number.isInteger(parsedProductId) || parsedProductId <= 0 ||
+        !["S", "M", "L", "XL", "XXL"].includes(size) ||
+        !Number.isInteger(parsedQuantity) ||
+        parsedQuantity < 1 || parsedQuantity > 10
+      ) {
       return res.status(400).json({
         message: "Invalid product, size or quantity"
       });
@@ -134,7 +138,7 @@ router.put("/update", authMiddleware, async (req, res) => {
 
     const item = cart.items.find(
       (item) =>
-        item.productId === productId &&
+        item.productId === parsedProductId &&
         item.size === size
     );
 
@@ -144,7 +148,7 @@ router.put("/update", authMiddleware, async (req, res) => {
       });
     }
 
-    item.quantity = quantity;
+    item.quantity = parsedQuantity;
 
     await cart.save();
 
@@ -167,16 +171,16 @@ router.put("/update", authMiddleware, async (req, res) => {
 router.delete("/remove", authMiddleware, async (req, res) => {
   try {
     const { productId, size } = req.body;
+    const parsedProductId = Number(productId);
 
     if (
-      !Number.isInteger(productId) || productId <= 0 ||
+      !Number.isInteger(parsedProductId) || parsedProductId <= 0 ||
       !["S", "M", "L", "XL", "XXL"].includes(size)
     ) {
       return res.status(400).json({
         message: "Invalid product or size"
       });
     }
-
     const cart = await Cart.findOne({
       userId: req.userId
     });
@@ -189,7 +193,7 @@ router.delete("/remove", authMiddleware, async (req, res) => {
 
     cart.items = cart.items.filter(
       (item) =>
-        !(item.productId === productId && item.size === size)
+        !(item.productId === parsedProductId && item.size === size)
     );
 
     await cart.save();

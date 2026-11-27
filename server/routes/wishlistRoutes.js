@@ -24,12 +24,16 @@ router.get("/", authMiddleware, async (req, res) => {
   console.error("Fetch Wishlist Error:", error.message);
 
   if (error.code === 11000) {
-    const wishlist = await Wishlist.findOne({
-      userId: req.userId
-    });
+    try {
+      const wishlist = await Wishlist.findOne({
+        userId: req.userId
+      });
 
-    if (wishlist) {
-      return res.status(200).json(wishlist.products);
+      if (wishlist) {
+        return res.status(200).json(wishlist.products);
+      }
+    } catch (retryError) {
+      console.error("Wishlist Retry Error:", retryError.message);
     }
   }
 
@@ -57,14 +61,7 @@ if (
 }
 
 const productId = Number(rawProductId);
-
-    if (!Number.isInteger(productId) || productId <= 0) {
-      return res.status(400).json({
-        message: "A valid product ID is required"
-      });
-    }
-
-    const product = await Product.findOne({ id: productId });
+const product = await Product.findOne({ id: productId });
 
     if (!product) {
       return res.status(404).json({
@@ -86,6 +83,12 @@ const productId = Number(rawProductId);
         id => id !== productId
       );
     } else {
+      if (wishlist.products.length >= 100) {
+        return res.status(400).json({
+          message: "Wishlist can contain a maximum of 100 products."
+        });
+      }
+
       wishlist.products.push(productId);
     }
 

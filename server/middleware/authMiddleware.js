@@ -17,9 +17,19 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    const token = authHeader.split(" ")[1];
+    const [scheme, token] = authHeader.trim().split(/\s+/);
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (scheme !== "Bearer" || !token) {
+      return res.status(401).json({
+        message: "Invalid authorization header."
+      });
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET,
+      { algorithms: ["HS256"] }
+    );
 
     if (
       typeof decoded.userId !== "string" ||

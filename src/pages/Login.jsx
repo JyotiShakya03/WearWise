@@ -29,19 +29,26 @@ const navigate = useNavigate();
         throw new Error(data.message || "Login failed");
       }
 
-sessionStorage.setItem("wearwise-token", data.token);
-sessionStorage.setItem("wearwise-user", JSON.stringify(data.user));
 
-console.log(
-  "Token saved after login:",
-  Boolean(sessionStorage.getItem("wearwise-token"))
-);
+      if (
+      !data.token ||
+      !data.user ||
+      !data.user.role ||
+      !["admin", "customer"].includes(data.user.role)
+    ) {
+      throw new Error("Invalid login response. Please try again.");
+    }
 
-if (data.user.role === "admin") {
-  navigate("/admin");
-} else {
-  navigate("/");
-}
+
+    sessionStorage.setItem("wearwise-token", data.token);
+    sessionStorage.setItem("wearwise-user", JSON.stringify(data.user));
+
+
+    if (data.user.role === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/");
+    }
 
     } catch (error) {
       setMessage(error.message || "Something went wrong.");

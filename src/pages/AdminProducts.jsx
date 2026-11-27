@@ -5,6 +5,9 @@ function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [uploading, setUploading] = useState(false);
 
     const [formData, setFormData] = useState({
     name: "",
@@ -49,6 +52,34 @@ function AdminProducts() {
   }));
 };
 
+const handleImageSelect = (e) => {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+  if (!allowedTypes.includes(file.type)) {
+    alert("Please select a JPG, PNG or WEBP image.");
+    e.target.value = "";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Image size should not exceed 5 MB.");
+    e.target.value = "";
+    return;
+  }
+
+  setSelectedImageFile(file);
+  setImagePreview(URL.createObjectURL(file));
+
+  setFormData((prev) => ({
+    ...prev,
+    image: ""
+  }));
+};
+
 const startEditing = (product) => {
   setEditingProductId(product.id);
 
@@ -59,13 +90,38 @@ const startEditing = (product) => {
     category: product.category,
     image: product.image
   });
-
+  setSelectedImageFile(null);
+setImagePreview(product.image || "");
   setShowForm(true);
 };
 
-const handleAddProduct = async (e) => {
-  e.preventDefault();
+const uploadProductImage = async () => {
+  const token = sessionStorage.getItem("wearwise-token");
 
+  const imageFormData = new FormData();
+  imageFormData.append("image", selectedImageFile);
+
+  const response = await fetch(
+    "http://localhost:5000/api/products/upload-image",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: imageFormData
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Image upload failed.");
+  }
+
+  return data.image;
+};
+
+const handleAddProduct = async (updatedData) => {
   try {
     const token = sessionStorage.getItem("wearwise-token");
 
@@ -75,32 +131,24 @@ const handleAddProduct = async (e) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({
-        ...formData,
-        price: Number(formData.price),
-        rating: Number(formData.rating || 0)
-      })
+      body: JSON.stringify(updatedData)
     });
 
     const data = await response.json();
 
     if (response.ok) {
       setProducts((prevProducts) => [...prevProducts, data.product]);
-      setFormData({
-        name: "",
-        price: "",
-        rating: "",
-        category: "",
-        image: ""
-      });
-      setShowForm(false);
       alert("Product added successfully!");
-    } else {
-      alert(data.message || "Failed to add product.");
+      return true;
     }
+
+    alert(data.message || "Failed to add product.");
+    return false;
+
   } catch (error) {
     console.error("Add product error:", error);
-    alert("Something went wrong.");
+    alert(error.message || "Something went wrong.");
+    return false;
   }
 };
 
@@ -130,12 +178,15 @@ const handleEditProduct = async (productId, updatedData) => {
       );
 
       alert("Product updated successfully!");
+      return true;
     } else {
       alert(data.message || "Failed to update product.");
+      return false;
     }
   } catch (error) {
     console.error("Edit product error:", error);
     alert("Something went wrong.");
+    return false;
   }
 };
 
@@ -181,29 +232,66 @@ const handleDeleteProduct = async (productId) => {
 const handleFormSubmit = async (e) => {
   e.preventDefault();
 
-  const updatedData = {
-    ...formData,
-    price: Number(formData.price),
-    rating: Number(formData.rating || 0)
-  };
+  try {
+    setUploading(true);
 
-  if (editingProductId !== null) {
-    await handleEditProduct(editingProductId, updatedData);
+    let imageUrl = formData.image.trim();
 
-    setEditingProductId(null);
-    setFormData({
-      name: "",
-      price: "",
-      rating: "",
-      category: "",
-      image: ""
-    });
-    setShowForm(false);
-  } else {
-    handleAddProduct(e);
+    // Upload image if a new file is selected
+    if (selectedImageFile) {
+      imageUrl = await uploadProductImage();
+    }
+
+    if (!imageUrl) {
+      alert("Please provide a product image URL or upload an image.");
+      return;
+    }
+
+    const updatedData = {
+      ...formData,
+      image: imageUrl,
+      price: Number(formData.price),
+      rating: Number(formData.rating || 0)
+    };
+
+    let success = false;
+
+    if (editingProductId !== null) {
+      success = await handleEditProduct(editingProductId, updatedData);
+    } else {
+      success = await handleAddProduct(updatedData);
+    }
+
+    if (success) {
+      const response = await fetch("http://localhost:5000/api/products");
+      const latestProducts = await response.json();
+
+      if (response.ok) {
+        setProducts(latestProducts);
+      }
+
+      setEditingProductId(null);
+      setSelectedImageFile(null);
+      setImagePreview("");
+
+      setFormData({
+        name: "",
+        price: "",
+        rating: "",
+        category: "",
+        image: ""
+      });
+
+      setShowForm(false);
+    }
+
+  } catch (error) {
+    console.error("Product form error:", error);
+    alert(error.message || "Something went wrong.");
+  } finally {
+    setUploading(false);
   }
 };
-
 
 return (
   <div className="admin-products-page">
@@ -213,17 +301,40 @@ return (
         <p>Manage your WearWise store inventory.</p>
       </div>
 
-            <button
-        className="add-product-btn"
-        onClick={() => setShowForm(!showForm)}
-        >
-        + Add Product
-        </button>
+      <button
+  className="add-product-btn"
+ onClick={() => {
+  if (!showForm) {
+    setEditingProductId(null);
+    setSelectedImageFile(null);
+    setImagePreview("");
+
+    setFormData({
+      name: "",
+      price: "",
+      rating: "",
+      category: "",
+      image: ""
+    });
+  }
+
+  setShowForm(!showForm);
+}}
+>
+  + Add Product
+</button>
+
     </div>
 
     {showForm && (
-    <form className="product-form" onSubmit={handleFormSubmit}>
-        <h2>Add New Product</h2>
+
+<form className="product-form" onSubmit={handleFormSubmit}>
+  <h2>
+    {editingProductId !== null ? "Edit Product" : "Add New Product"}
+  </h2>
+
+  {/* LEFT SIDE - PRODUCT FIELDS */}
+  <div className="product-form-fields">
 
     <input
       type="text"
@@ -263,19 +374,64 @@ return (
       required
     />
 
-    <input
-      type="text"
-      name="image"
-      placeholder="Product Image URL"
-      value={formData.image}
-      onChange={handleChange}
-      required
-    />
+    <div className="product-image-upload">
 
-        <button type="submit">
-    {editingProductId !== null ? "Update Product" : "Save Product"}
+      <label>Product Image URL (Optional)</label>
+
+      <input
+        type="text"
+        name="image"
+        placeholder="Paste product image URL"
+        value={formData.image}
+        onChange={(e) => {
+          handleChange(e);
+          setSelectedImageFile(null);
+          setImagePreview(e.target.value);
+        }}
+      />
+
+      <p>OR</p>
+
+      <label>Upload Product Image</label>
+
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleImageSelect}
+      />
+
+    </div>
+
+    <button type="submit" disabled={uploading}>
+      {uploading
+        ? "Uploading..."
+        : editingProductId !== null
+          ? "Update Product"
+          : "Save Product"}
     </button>
-  </form>
+
+  </div>
+
+  {/* RIGHT SIDE - IMAGE PREVIEW */}
+  <div className="product-preview-panel">
+
+    <h3>Product Image Preview</h3>
+
+    {imagePreview ? (
+      <img
+        src={imagePreview}
+        alt="Product Preview"
+        className="product-image-preview"
+      />
+    ) : (
+      <div className="preview-placeholder">
+        Product image will appear here
+      </div>
+    )}
+
+  </div>
+
+</form>
 )}
 
     {loading ? (

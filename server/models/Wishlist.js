@@ -11,13 +11,19 @@ const wishlistSchema = new mongoose.Schema(
     },
 
     products: {
-  type: [Number],
-  default: [],
-  validate: {
-    validator: products => new Set(products).size === products.length,
-    message: "Duplicate products are not allowed."
-  }
-}
+      type: [Number],
+      default: [],
+      validate: [
+        {
+          validator: products => new Set(products).size === products.length,
+          message: "Duplicate products are not allowed."
+        },
+        {
+          validator: products => products.length <= 100,
+          message: "Wishlist cannot contain more than 100 products."
+        }
+      ]
+    }
   },
   { timestamps: true }
 );

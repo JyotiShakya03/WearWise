@@ -47,9 +47,26 @@ const cartSchema = new mongoose.Schema(
       unique: true
     },
     items: {
-      type: [cartItemSchema],
-      default: []
-    }
+  type: [cartItemSchema],
+  default: [],
+  validate: {
+    validator: function (items) {
+      const seen = new Set();
+
+      return items.every((item) => {
+        const key = `${item.productId}-${item.size}`;
+
+        if (seen.has(key)) {
+          return false;
+        }
+
+        seen.add(key);
+        return true;
+      });
+    },
+    message: "Duplicate product and size entries are not allowed."
+  }
+}
   },
   { timestamps: true }
 );

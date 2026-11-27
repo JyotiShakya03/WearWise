@@ -21,6 +21,7 @@ router.post("/register", async (req, res) => {
       typeof email !== "string" ||
       typeof password !== "string" ||
       !name.trim() ||
+      name.trim().length > 100 ||
       !email.trim() ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
       password.length < 8 ||
@@ -85,6 +86,7 @@ if (
   typeof email !== "string" ||
   typeof password !== "string" ||
   !email.trim() ||
+  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
   password.length < 1 ||
   password.length > 128
 ) {
@@ -126,7 +128,10 @@ if (
         role: user.role
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      {
+        expiresIn: "1d",
+        algorithm: "HS256"
+      }
     );
 
     res.status(200).json({
